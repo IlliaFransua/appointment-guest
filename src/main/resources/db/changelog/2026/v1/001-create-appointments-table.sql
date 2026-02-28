@@ -37,7 +37,6 @@ CREATE TABLE appointments (
     status                  VARCHAR(30)     NOT NULL
         CHECK (status IN (
             'CREATED',
-            'VERIFICATION_CODE_SENT',
             'CONFIRMED',
             'CANCELLED_BY_GUEST',
             'CANCELLED_BY_MASTER',

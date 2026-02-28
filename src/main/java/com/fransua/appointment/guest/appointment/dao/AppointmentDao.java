@@ -1,9 +1,11 @@
 package com.fransua.appointment.guest.appointment.dao;
 
 import com.fransua.appointment.guest.appointment.Appointment;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.data.domain.Pageable;
 
@@ -17,5 +19,9 @@ public interface AppointmentDao {
   List<Appointment> findAllByAddressIdAndDateInAndStatusNotIn(
       Long addressId, Set<LocalDate> dates, Set<Appointment.Status> statuses);
 
-  List<Appointment> findTopForVerification(Pageable pageable);
+  List<Appointment> findTopForVerification(Instant threshold, Pageable pageable);
+
+  Optional<Appointment> findByIdAndSlug(Long id, String slug);
+
+  void delete(Appointment appointment);
 }

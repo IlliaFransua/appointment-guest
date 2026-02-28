@@ -3,9 +3,11 @@ package com.fransua.appointment.guest.appointment.dao;
 import com.fransua.appointment.guest.appointment.Appointment;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -37,6 +39,14 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2")})
-  @Query("SELECT a FROM Appointment a WHERE a.status = 'CREATED' ORDER BY a.createdAt" + " ASC")
-  List<Appointment> findTopForVerification(Pageable pageable);
+  @Query(
+      """
+      SELECT a FROM Appointment a
+      WHERE a.status = 'CREATED'
+        AND a.createdAt < :threshold
+        ORDER BY a.createdAt ASC\
+      """)
+  List<Appointment> findTopForVerification(Instant threshold, Pageable pageable);
+
+  Optional<Appointment> findByIdAndSlug(Long id, String slug);
 }

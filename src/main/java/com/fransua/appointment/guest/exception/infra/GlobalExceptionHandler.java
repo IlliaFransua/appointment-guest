@@ -1,8 +1,11 @@
 package com.fransua.appointment.guest.exception.infra;
 
 import com.fransua.appointment.guest.exception.InvalidAppointmentSlotException;
+import com.fransua.appointment.guest.exception.InvalidVerificationCodeException;
 import com.fransua.appointment.guest.exception.RequestValidationException;
 import com.fransua.appointment.guest.exception.ResourceLimitExceededException;
+import com.fransua.appointment.guest.exception.ResourceNotFoundException;
+import com.fransua.appointment.guest.exception.VerificationCodeExpiredException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.stream.Collectors;
@@ -22,6 +25,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+  @ExceptionHandler(ResourceNotFoundException.class)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  public ApiErrorResponse handleResourceNotFound(RuntimeException ex) {
+    return ApiErrorResponse.from(HttpStatus.NOT_FOUND, ex.getMessage());
+  }
 
   @ExceptionHandler(ServiceIntegrationException.class)
   public ResponseEntity<ApiErrorResponse> handleServiceIntegrationException(
@@ -94,7 +103,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     return ApiErrorResponse.from(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
   }
 
-  @ExceptionHandler(RequestValidationException.class)
+  @ExceptionHandler(VerificationCodeExpiredException.class)
+  @ResponseStatus(HttpStatus.GONE)
+  public ApiErrorResponse handleVerificationCodeExpiredException(Exception ex) {
+    return ApiErrorResponse.from(HttpStatus.GONE, ex.getMessage());
+  }
+
+  @ExceptionHandler({RequestValidationException.class, InvalidVerificationCodeException.class})
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ApiErrorResponse handleRequestValudationException(RequestValidationException ex) {
     log.warn("Bad request", ex);
