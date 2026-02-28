@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: "postgres:17"
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+  rabbitmq:
+    image: "rabbitmq:4.0-management-alpine"
+    container_name: rabbitmq-prod
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VM_MEMORY_HIGH_WATERMARK_RELATIVE: 0.4
+    ports:
+      - "5672:5672"
+      - "15672:15672"

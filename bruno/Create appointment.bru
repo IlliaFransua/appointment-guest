@@ -1,0 +1,28 @@
+meta {
+  name: Create appointment
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:8083/api/v1/appointment/appointments/4855dctk
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "addressId": 4,
+    "offeringId": 3,
+    "shiftId": 102,
+    "guestName": "Pikachu Fransua",
+    "guestPhone": "41987587123",
+    "guestPreAppointmentNotes": "I need an outlet near my chair and strong coffee.",
+    "startTime": "11:30"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

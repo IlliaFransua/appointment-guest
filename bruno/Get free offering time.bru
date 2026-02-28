@@ -1,0 +1,22 @@
+meta {
+  name: Get free offering time
+  type: http
+  seq: 3
+}
+
+get {
+  url: http://localhost:8083/api/v1/appointment/shifts/4855dctk?addressId=4&offeringId=3&yearMonth=2026-03
+  body: none
+  auth: inherit
+}
+
+params:query {
+  addressId: 4
+  offeringId: 3
+  yearMonth: 2026-03
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
