@@ -1,0 +1,22 @@
+meta {
+  name: Edit contact
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8083/api/v1/contact/42/phone/edit
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "phone": "41765947614"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

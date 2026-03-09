@@ -49,4 +49,9 @@ public class AppointmentJpaDataAccessService implements AppointmentDao {
   public void delete(Appointment appointment) {
     repository.delete(appointment);
   }
+
+  @Override
+  public Optional<Appointment> findByIdAndStatus(Long id, Status status) {
+    return repository.findByIdAndStatus(id, status);
+  }
 }

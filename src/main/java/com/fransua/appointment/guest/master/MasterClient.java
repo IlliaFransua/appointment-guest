@@ -1,6 +1,7 @@
 package com.fransua.appointment.guest.master;
 
 import com.fransua.appointment.guest.master.dto.booking.BookingContextResponse;
+import com.fransua.appointment.guest.master.dto.booking.GuestFieldsResponse;
 import com.fransua.appointment.guest.master.dto.category.CategoryResponse;
 import com.fransua.appointment.guest.master.dto.offering.OfferingPageResponse;
 import com.fransua.appointment.guest.master.dto.offering.OfferingResponse;
@@ -43,4 +44,7 @@ public interface MasterClient {
       @RequestParam @NotNull Long addressId,
       @RequestParam @NotNull Long shiftId,
       @RequestParam @NotNull Long offeringId);
+
+  @GetMapping("/api/internal/v1/bookinglink/{slug}/guestfields")
+  GuestFieldsResponse getRequiredGuestFields(@PathVariable String slug);
 }

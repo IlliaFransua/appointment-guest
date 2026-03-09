@@ -1,3 +1,5 @@
 databaseChangeLog:
   - include:
       file: db/changelog/2026/v1/001-create-appointments-table.sql
+  - include:
+      file: db/changelog/2026/v1/002-create-contacts-table.sql

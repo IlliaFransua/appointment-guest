@@ -1,4 +1,4 @@
-package com.fransua.appointment.guest.appointment.dao;
+package com.fransua.appointment.guest.appointment.dto;
 
 import com.fransua.appointment.guest.util.FTimeUtil.FTimeRange;
 import java.time.LocalDate;

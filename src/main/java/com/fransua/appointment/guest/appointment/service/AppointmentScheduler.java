@@ -13,7 +13,7 @@ public class AppointmentScheduler {
 
   private final AppointmentCleanupService appointmentCleanupService;
 
-  @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
+  @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.MINUTES)
   void processPendingVerifications() {
     log.info("Starting scheduled cleanup of unconfirmed appointments");
 

@@ -1,0 +1,22 @@
+meta {
+  name: Send verification code
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8083/api/v1/contact/42/phone/send-verification-code/22
+  body: none
+  auth: inherit
+}
+
+body:json {
+  {
+    "phone": "41765947614"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -11,10 +11,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitConfig {
 
-  public static final String APPOINTMENT_EXCHANGE = "appointments";
-  public static final String APPOINTMENT_CONFIRM_SMS_RK = "confirmation_requested.sms";
-  public static final String APPOINTMENT_CONFIRM_SMS_QUEUE =
-      APPOINTMENT_EXCHANGE + "." + APPOINTMENT_CONFIRM_SMS_RK;
+  public static final String APPOINTMENT_EXCHANGE = "appointment";
+  public static final String APPOINTMENT_CONFIRM_PHONE_RK = "confirmation_requested.phone";
+  public static final String APPOINTMENT_CONFIRM_PHONE_QUEUE =
+      APPOINTMENT_EXCHANGE + "." + APPOINTMENT_CONFIRM_PHONE_RK;
 
   @Bean
   TopicExchange appointmentExchange() {
@@ -22,15 +22,15 @@ public class RabbitConfig {
   }
 
   @Bean
-  Queue appointmentConfirmSmsQueue() {
-    return new Queue(APPOINTMENT_CONFIRM_SMS_QUEUE, true);
+  Queue phoneQueue() {
+    return new Queue(APPOINTMENT_CONFIRM_PHONE_QUEUE, true);
   }
 
   @Bean
-  Binding appointmentConfirmSmsBinding() {
-    return BindingBuilder.bind(appointmentConfirmSmsQueue())
+  Binding phoneBinding() {
+    return BindingBuilder.bind(phoneQueue())
         .to(appointmentExchange())
-        .with(APPOINTMENT_CONFIRM_SMS_RK);
+        .with(APPOINTMENT_CONFIRM_PHONE_RK);
   }
 
   @Bean

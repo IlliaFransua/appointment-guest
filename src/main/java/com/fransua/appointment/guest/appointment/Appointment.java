@@ -54,6 +54,7 @@ public class Appointment {
   private Long masterId;
 
   @NotNull
+  @Size(max = 50)
   @Column(nullable = false)
   private String slug;
 
@@ -62,15 +63,6 @@ public class Appointment {
   @Size(min = 2, max = 50)
   @Column(nullable = true)
   private String guestName;
-
-  @Size(min = 7, max = 15)
-  @Pattern(regexp = "^[1-9]\\d{6,14}$")
-  @Column(nullable = true, length = 15)
-  private String guestPhone; // E.164
-
-  @Size(max = 64)
-  @Column(nullable = true, length = 64)
-  private String guestPhoneHash;
 
   @Size(max = 500)
   @Column(nullable = true)
@@ -87,11 +79,11 @@ public class Appointment {
   private LocalDate date;
 
   @NotNull
-  @Column(nullable = false)
+  @Column(nullable = false, columnDefinition = "time(0)")
   private LocalTime startTime;
 
   @NotNull
-  @Column(nullable = false)
+  @Column(nullable = false, columnDefinition = "time(0)")
   private LocalTime endTime;
 
   // Snapshot of offering

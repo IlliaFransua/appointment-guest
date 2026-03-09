@@ -1,8 +1,8 @@
 package com.fransua.appointment.guest.appointment;
 
-import com.fransua.appointment.guest.appointment.dao.FreeOfferingTimeResponse;
 import com.fransua.appointment.guest.appointment.dto.AppointmentResponse;
 import com.fransua.appointment.guest.appointment.dto.CreateAppointmentRequest;
+import com.fransua.appointment.guest.appointment.dto.FreeOfferingTimeResponse;
 import com.fransua.appointment.guest.master.MasterClient;
 import com.fransua.appointment.guest.master.dto.category.CategoryResponse;
 import com.fransua.appointment.guest.master.dto.offering.OfferingPageResponse;
@@ -58,12 +58,5 @@ public class AppointmentController {
   public AppointmentResponse createAppointment(
       @PathVariable String slug, @RequestBody @Valid CreateAppointmentRequest request) {
     return appointmentService.createAppointment(slug, request);
-  }
-
-  @PostMapping("/appointments/{slug}/{id}/confirm")
-  @ResponseStatus(HttpStatus.OK)
-  public void confirmAppointment(
-      @PathVariable String slug, @PathVariable Long id, @RequestParam String code) {
-    appointmentService.confirmAppointment(slug, id, code);
   }
 }

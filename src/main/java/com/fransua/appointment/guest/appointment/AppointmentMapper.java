@@ -4,6 +4,7 @@ import com.fransua.appointment.guest.appointment.dto.AppointmentResponse;
 import com.fransua.appointment.guest.appointment.dto.CreateAppointmentRequest;
 import com.fransua.appointment.guest.exception.ResourceNotFoundException;
 import com.fransua.appointment.guest.master.dto.booking.BookingContextResponse;
+import com.fransua.appointment.guest.master.dto.booking.GuestFieldsResponse;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import org.mapstruct.Mapper;
@@ -11,10 +12,11 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface AppointmentMapper {
 
-  AppointmentResponse toResponse(Appointment appointment);
+  AppointmentResponse toResponse(Appointment appointment, GuestFieldsResponse guestFieldsResponse);
 
   default Appointment toEntity(
       String slug,
+      Appointment.Status status,
       BookingContextResponse context,
       CreateAppointmentRequest createAppointmentRequest) {
     return Appointment.builder()
@@ -24,8 +26,6 @@ public interface AppointmentMapper {
 
         // Guest
         .guestName(createAppointmentRequest.guestName())
-        .guestPhone(createAppointmentRequest.guestPhone())
-        .guestPhoneHash(null)
         .guestPreAppointmentNotes(createAppointmentRequest.guestPreAppointmentNotes())
 
         // Shift
@@ -49,7 +49,7 @@ public interface AppointmentMapper {
         .addressTimezone(context.address().timezone())
 
         // Status
-        .status(Appointment.Status.CREATED)
+        .status(status)
         .createdAt(null)
         .updatedAt(null)
         .build();

@@ -6,6 +6,7 @@ import com.fransua.appointment.guest.exception.RequestValidationException;
 import com.fransua.appointment.guest.exception.ResourceLimitExceededException;
 import com.fransua.appointment.guest.exception.ResourceNotFoundException;
 import com.fransua.appointment.guest.exception.VerificationCodeExpiredException;
+import com.fransua.appointment.guest.exception.VerificationNotRequiredException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.stream.Collectors;
@@ -97,7 +98,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             + " violation");
   }
 
-  @ExceptionHandler({ResourceLimitExceededException.class, InvalidAppointmentSlotException.class})
+  @ExceptionHandler({
+    ResourceLimitExceededException.class,
+    InvalidAppointmentSlotException.class,
+    VerificationNotRequiredException.class
+  })
   @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
   public ApiErrorResponse handleBusinessExceptions(Exception ex) {
     return ApiErrorResponse.from(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());

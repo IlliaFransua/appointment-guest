@@ -2,6 +2,7 @@ package com.fransua.appointment.guest.appointment.service;
 
 import com.fransua.appointment.guest.appointment.Appointment;
 import com.fransua.appointment.guest.appointment.dao.AppointmentDao;
+import com.fransua.appointment.guest.contact.dao.ContactDao;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -16,9 +17,11 @@ public class AppointmentCleanupService {
 
   private final AppointmentDao appointmentDao;
 
+  private final ContactDao contactDao;
+
   @Transactional
   public int cleanNextBatch() {
-    Instant threshold = Instant.now().minus(Duration.ofMinutes(5));
+    Instant threshold = Instant.now().minus(Duration.ofMinutes(10));
     List<Appointment> batch =
         appointmentDao.findTopForVerification(threshold, PageRequest.of(0, 20));
 
@@ -27,6 +30,7 @@ public class AppointmentCleanupService {
     }
 
     for (Appointment appt : batch) {
+      contactDao.deleteAllByAppointmentId(appt.getId());
       appointmentDao.delete(appt);
     }
     return batch.size();

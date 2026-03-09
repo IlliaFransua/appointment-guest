@@ -1,0 +1,22 @@
+meta {
+  name: Confirm phone
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:8083/api/v1/contact/42/phone/confirm/22
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "code": "9551"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

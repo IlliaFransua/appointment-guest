@@ -1,0 +1,22 @@
+meta {
+  name: Attach contact
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8083/api/v1/contact/42/phone/attach
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "phone": "41765947613"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

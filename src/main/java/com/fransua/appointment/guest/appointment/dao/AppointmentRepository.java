@@ -49,4 +49,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
   List<Appointment> findTopForVerification(Instant threshold, Pageable pageable);
 
   Optional<Appointment> findByIdAndSlug(Long id, String slug);
+
+  Optional<Appointment> findByIdAndStatus(Long id, Appointment.Status status);
 }
