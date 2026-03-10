@@ -6,13 +6,16 @@ import com.fransua.appointment.guest.contact.dto.PhoneRequest;
 import com.fransua.appointment.guest.contact.event.PhoneVerificationEvent;
 import com.fransua.appointment.guest.exception.RequestValidationException;
 import com.fransua.appointment.guest.exception.ResourceNotFoundException;
+import com.fransua.appointment.guest.util.PhoneUtil;
 import io.netty.util.internal.ThreadLocalRandom;
 import jakarta.validation.Valid;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -20,6 +23,7 @@ import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+@Slf4j
 @Service
 @Validated
 @RequiredArgsConstructor
@@ -31,7 +35,14 @@ public class PhoneVerificationProducer {
 
   private static final String BASE_PREFIX = "appointment:verify:phone:";
 
-  private static String KEY_IS_VERIFY_DISABLED = "system:status:" + BASE_PREFIX + "disabled";
+  private static final String KEY_SYSTEM_ERROR_COUNT = "system:error:" + BASE_PREFIX + "count";
+  private static String KEY_SYSTEM_IS_VERIFY_DISABLED = "system:status:" + BASE_PREFIX + "disabled";
+
+  private static final String SYSTEM_ERROR_WINDOW_TTL = "600"; // 10 min
+  private static final String SYSTEM_ERROR_THRESHOLD = "5";
+  private static final String SYSTEM_DISABLED_TTL = "300"; // 5 min
+
+  private static final String BASE_LOCK_PREFIX = BASE_PREFIX + "lock:";
 
   private static final String KEY_OTP_PHONE = BASE_PREFIX + "code:";
   private static final Duration TTL_OTP_PHONE = Duration.ofMinutes(10);
@@ -65,7 +76,29 @@ public class PhoneVerificationProducer {
               + "return attemptsCount",
           Long.class);
 
+  private static final DefaultRedisScript<Long> SYSTEM_FAULT_BREAKER_SCRIPT =
+      new DefaultRedisScript<>(
+          "local count = redis.call('INCR', KEYS[1]) "
+              + "if tonumber(count) == 1 then "
+              + "  redis.call('EXPIRE', KEYS[1], ARGV[1]) "
+              + "end "
+              + "if tonumber(count) >= tonumber(ARGV[2]) then "
+              + "  redis.call('SET', KEYS[2], 'true', 'EX', ARGV[3]) "
+              + "  redis.call('DEL', KEYS[1]) "
+              + "  return 1 "
+              + "end "
+              + "return 0",
+          Long.class);
+
   public void sendVerificationCode(Appointment appointment, @Valid PhoneRequest request) {
+    String lockKey = BASE_LOCK_PREFIX + appointment.getId();
+    Boolean acquired =
+        redisTemplate.opsForValue().setIfAbsent(lockKey, "locked", Duration.ofSeconds(10));
+
+    if (Boolean.FALSE.equals(acquired)) {
+      throw new RequestValidationException("Another request is being processed. Please wait.");
+    }
+
     String phone = request.phone();
     Long apptId = appointment.getId();
 
@@ -83,7 +116,7 @@ public class PhoneVerificationProducer {
 
     String code = String.format("%04d", ThreadLocalRandom.current().nextInt(10000));
     saveCode(apptId, code);
-    sendCode(request, code);
+    sendCode(request, code, appointment.getMasterId());
   }
 
   public void resendVerificationCode(Appointment appointment, @Valid PhoneRequest request) {
@@ -156,11 +189,11 @@ public class PhoneVerificationProducer {
     redisTemplate.opsForValue().set(key, code, TTL_OTP_PHONE);
   }
 
-  private void sendCode(@Valid PhoneRequest request, String code) {
+  private void sendCode(@Valid PhoneRequest request, String code, Long masterId) {
     rabbitTemplate.convertAndSend(
         RabbitConfig.APPOINTMENT_EXCHANGE,
         RabbitConfig.APPOINTMENT_CONFIRM_PHONE_RK,
-        new PhoneVerificationEvent(request.phone(), code));
+        new PhoneVerificationEvent(request.phone(), code, masterId));
   }
 
   private Optional<String> findVerificationCode(Long appointmentId) {
@@ -169,10 +202,69 @@ public class PhoneVerificationProducer {
         .filter(code -> !code.isBlank());
   }
 
+  private static final Set<String> SUPPORTED_COUNTRY_CODES =
+      Set.of(
+          "43", // Austria
+          "420", // Czech Republic
+          "372", // Estonia
+          "33", // France
+          "49", // Germany
+          "30", // Greece
+          "36", // Hungary
+          "39", // Italy
+          "371", // Latvia
+          "423", // Liechtenstein
+          "370", // Lithuania
+          "47", // Norway
+          "48", // Poland
+          "40", // Romania
+          "34", // Spain
+          "46", // Sweden
+          "41", // Switzerland
+          "971", // United Arab Emirates
+          "44", // United Kingdom
+          "1" // United States
+          );
+
+  public boolean isVerificationSystemDisabled() {
+    return Boolean.TRUE.equals(redisTemplate.hasKey(KEY_SYSTEM_IS_VERIFY_DISABLED));
+  }
+
   public boolean isPhoneVerificationUnvailable(@Valid PhoneRequest request) {
-    if (request.phone().startsWith("380")) {
-      return false;
+    if (isVerificationSystemDisabled()) {
+      return true;
     }
-    return Boolean.TRUE.equals(redisTemplate.hasKey(KEY_IS_VERIFY_DISABLED));
+
+    String phone = request.phone();
+    boolean isSupported = SUPPORTED_COUNTRY_CODES.stream().anyMatch(phone::startsWith);
+
+    if (!isSupported) {
+      log.warn(
+          "Phone verification blocked: country code not supported for number {}",
+          PhoneUtil.maskPhoneNumber(phone));
+      return true;
+    }
+    return false;
+  }
+
+  public void recordSystemFault() {
+    try {
+      Long result =
+          redisTemplate.execute(
+              SYSTEM_FAULT_BREAKER_SCRIPT,
+              List.of(KEY_SYSTEM_ERROR_COUNT, KEY_SYSTEM_IS_VERIFY_DISABLED),
+              SYSTEM_ERROR_WINDOW_TTL,
+              SYSTEM_ERROR_THRESHOLD,
+              SYSTEM_DISABLED_TTL);
+
+      if (Long.valueOf(1).equals(result)) {
+        log.error(
+            "System threshold reached ({} errors). Phone verification disabled for {}s",
+            SYSTEM_ERROR_THRESHOLD,
+            SYSTEM_DISABLED_TTL);
+      }
+    } catch (Exception e) {
+      log.error("Failed to execute System Fault Breaker script", e);
+    }
   }
 }

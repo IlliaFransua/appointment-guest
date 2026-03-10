@@ -111,21 +111,17 @@ public class ContactService {
     }
 
     contact.setStatus(Contact.Status.PENDING_VERIFICATION);
-    if (isResend) {
-      TransactionSynchronizationManager.registerSynchronization(
-          new TransactionSynchronization() {
-            public void afterCommit() {
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            if (isResend) {
               phoneVerificationProducer.resendVerificationCode(appt, new PhoneRequest(phone));
-            }
-          });
-    } else {
-      TransactionSynchronizationManager.registerSynchronization(
-          new TransactionSynchronization() {
-            public void afterCommit() {
+            } else {
               phoneVerificationProducer.sendVerificationCode(appt, new PhoneRequest(phone));
             }
-          });
-    }
+          }
+        });
   }
 
   @Transactional

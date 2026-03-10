@@ -30,6 +30,7 @@ spring:
 
   data:
     redis:
+      port: ${REDIS_PORT:6380}
       host: ${REDIS_HOST}
       password: ${REDIS_PASSWORD}
 
@@ -54,6 +55,10 @@ spring:
 services:
   master:
     url: http://localhost:8082
+
+gatewayapieu:
+  token: ${GATEWAYAPI_TOKEN}
+  is-test-mode: true
 
 internal:
   token: "${INTERNAL_TOKEN}"
