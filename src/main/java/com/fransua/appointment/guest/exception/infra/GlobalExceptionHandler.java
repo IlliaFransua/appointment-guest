@@ -5,6 +5,7 @@ import com.fransua.appointment.guest.exception.InvalidVerificationCodeException;
 import com.fransua.appointment.guest.exception.RequestValidationException;
 import com.fransua.appointment.guest.exception.ResourceLimitExceededException;
 import com.fransua.appointment.guest.exception.ResourceNotFoundException;
+import com.fransua.appointment.guest.exception.ServiceUnavailableException;
 import com.fransua.appointment.guest.exception.VerificationCodeExpiredException;
 import com.fransua.appointment.guest.exception.VerificationNotRequiredException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -85,6 +86,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     log.error("Unexpected error at {}", request.getRequestURI(), ex);
     return ApiErrorResponse.from(
         HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred. Please try again later.");
+  }
+
+  @ExceptionHandler(ServiceUnavailableException.class)
+  @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+  public ApiErrorResponse handleServiceNotFoundException(Exception ex) {
+    return ApiErrorResponse.from(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
   }
 
   @ExceptionHandler(DataIntegrityViolationException.class)

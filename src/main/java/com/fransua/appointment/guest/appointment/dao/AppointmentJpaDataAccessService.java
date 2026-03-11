@@ -54,4 +54,9 @@ public class AppointmentJpaDataAccessService implements AppointmentDao {
   public Optional<Appointment> findByIdAndStatus(Long id, Status status) {
     return repository.findByIdAndStatus(id, status);
   }
+
+  @Override
+  public Optional<Appointment> findByIdAndSlugAndStatus(Long id, String slug, Status status) {
+    return repository.findByIdAndSlugAndStatus(id, slug, status);
+  }
 }

@@ -230,11 +230,7 @@ public class PhoneVerificationProducer {
     return Boolean.TRUE.equals(redisTemplate.hasKey(KEY_SYSTEM_IS_VERIFY_DISABLED));
   }
 
-  public boolean isPhoneVerificationUnvailable(@Valid PhoneRequest request) {
-    if (isVerificationSystemDisabled()) {
-      return true;
-    }
-
+  public boolean isPhoneUnsupported(@Valid PhoneRequest request) {
     String phone = request.phone();
     boolean isSupported = SUPPORTED_COUNTRY_CODES.stream().anyMatch(phone::startsWith);
 

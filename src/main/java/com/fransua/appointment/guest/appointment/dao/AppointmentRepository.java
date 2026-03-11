@@ -51,4 +51,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
   Optional<Appointment> findByIdAndSlug(Long id, String slug);
 
   Optional<Appointment> findByIdAndStatus(Long id, Appointment.Status status);
+
+  Optional<Appointment> findByIdAndSlugAndStatus(Long id, String slug, Appointment.Status status);
 }

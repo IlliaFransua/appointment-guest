@@ -24,17 +24,10 @@ public class PhoneVerificationListener {
 
   private final SmsSender smsSender;
 
-  private final PhoneVerificationProducer phoneVerificationProducer;
-
   @RabbitListener(queues = RabbitConfig.APPOINTMENT_CONFIRM_PHONE_QUEUE)
   void handleVerificationEvent(PhoneVerificationEvent event) {
     String maskedPhone = PhoneUtil.maskPhoneNumber(event.phoneNumber());
     log.info("Processing SMS verification for phone: {}", maskedPhone);
-
-    if (phoneVerificationProducer.isVerificationSystemDisabled()) {
-      log.warn("System is currently in circuit breaker mode. Dropping SMS for {}", maskedPhone);
-      throw new AmqpRejectAndDontRequeueException("Verification system disabled");
-    }
 
     validateEvent(event);
 
@@ -46,6 +39,7 @@ public class PhoneVerificationListener {
         log.info("SMS successfully accepted by provider. Message ID: {}", res.msgId());
         // TODO: billingService.deductSmsCredit(event.masterId());
       }
+
     } catch (NumberFormatException ex) {
       log.error("Fatal error: invalid phone number format. Dropping message.");
       throw new AmqpRejectAndDontRequeueException("Invalid phone format", ex);

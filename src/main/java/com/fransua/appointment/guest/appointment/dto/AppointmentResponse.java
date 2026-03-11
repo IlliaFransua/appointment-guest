@@ -1,7 +1,6 @@
 package com.fransua.appointment.guest.appointment.dto;
 
 import com.fransua.appointment.guest.appointment.Appointment;
-import com.fransua.appointment.guest.master.dto.booking.GuestFieldsResponse;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -36,7 +35,4 @@ public record AppointmentResponse(
     String addressFull,
     String addressDetails,
     String addressTimezone, // IANA timezone
-    Appointment.Status status,
-
-    // Verification Strategies
-    GuestFieldsResponse guestFieldsResponse) {}
+    Appointment.Status status) {}

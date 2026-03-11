@@ -48,4 +48,9 @@ public class ContactJpaDataAccessService implements ContactDao {
   public void deleteAllByAppointmentId(Long appointmentId) {
     repository.deleteAllByAppointmentId(appointmentId);
   }
+
+  @Override
+  public List<Contact> findAllByAppointmentIdAndStatus(Long appointmentId, Contact.Status status) {
+    return repository.findAllByAppointmentIdAndStatus(appointmentId, status);
+  }
 }

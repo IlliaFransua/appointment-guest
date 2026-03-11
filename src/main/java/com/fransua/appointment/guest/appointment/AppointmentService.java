@@ -1,13 +1,22 @@
 package com.fransua.appointment.guest.appointment;
 
 import com.fransua.appointment.guest.appointment.dao.AppointmentDao;
+import com.fransua.appointment.guest.appointment.dto.AppointmentDraftResponse;
+import com.fransua.appointment.guest.appointment.dto.AppointmentFinalResponse;
 import com.fransua.appointment.guest.appointment.dto.AppointmentResponse;
 import com.fransua.appointment.guest.appointment.dto.CreateAppointmentRequest;
 import com.fransua.appointment.guest.appointment.dto.FreeOfferingTimeResponse;
+import com.fransua.appointment.guest.contact.Contact;
+import com.fransua.appointment.guest.contact.dto.ContactResponse;
+import com.fransua.appointment.guest.contact.internal.ContactInternalService;
 import com.fransua.appointment.guest.exception.InvalidAppointmentSlotException;
+import com.fransua.appointment.guest.exception.RequestValidationException;
 import com.fransua.appointment.guest.exception.ResourceLimitExceededException;
+import com.fransua.appointment.guest.exception.ResourceNotFoundException;
 import com.fransua.appointment.guest.master.MasterClient;
 import com.fransua.appointment.guest.master.dto.booking.BookingContextResponse;
+import com.fransua.appointment.guest.master.dto.booking.GuestFields;
+import com.fransua.appointment.guest.master.dto.booking.GuestFieldsResponse;
 import com.fransua.appointment.guest.master.dto.offering.OfferingResponse;
 import com.fransua.appointment.guest.master.dto.shift.ShiftResponse;
 import com.fransua.appointment.guest.util.FTimeUtil;
@@ -38,8 +47,10 @@ public class AppointmentService {
 
   private final AppointmentMapper appointmentMapper;
 
+  private final ContactInternalService contactInternalService;
+
   @Transactional
-  public AppointmentResponse createAppointment(String slug, CreateAppointmentRequest request) {
+  public AppointmentDraftResponse createAppointment(String slug, CreateAppointmentRequest request) {
     BookingContextResponse context =
         masterClient.getBookingContext(
             slug, request.addressId(), request.shiftId(), request.offeringId());
@@ -74,7 +85,62 @@ public class AppointmentService {
       throw new ResourceLimitExceededException("This time slot was just taken by another guest");
     }
 
-    return appointmentMapper.toResponse(appt, masterClient.getRequiredGuestFields(slug));
+    AppointmentResponse appointmentResponse = appointmentMapper.toResponse(appt);
+    GuestFieldsResponse requiredFields = masterClient.getRequiredGuestFields(slug);
+    return new AppointmentDraftResponse(appointmentResponse, requiredFields);
+  }
+
+  @Transactional(readOnly = true)
+  public GuestFieldsResponse getRequiredGuestFields(String slug) {
+    GuestFieldsResponse response = masterClient.getRequiredGuestFields(slug);
+
+    if (contactInternalService.isVerificationSystemDisabled()) {
+      List<GuestFields> filteredToVerify =
+          response.guestFieldsToVerify().stream()
+              .filter(field -> !GuestFields.PHONE.equals(field))
+              .toList();
+      return new GuestFieldsResponse(response.guestRequiredFields(), filteredToVerify);
+    }
+
+    return response;
+  }
+
+  @Transactional
+  public AppointmentFinalResponse confirmAppointment(Long appointmentId, String slug) {
+    Appointment appt = getAppointment(appointmentId, slug, Appointment.Status.CREATED);
+    List<ContactResponse> contacts = contactInternalService.getAllContacts(appt.getId());
+    GuestFieldsResponse requirements = getRequiredGuestFields(appt.getSlug());
+
+    Map<String, Contact.Status> contactMap =
+        contacts.stream()
+            .collect(
+                Collectors.toMap(
+                    contact -> contact.type().name(), ContactResponse::status, (s1, s2) -> s1));
+
+    for (GuestFields field : requirements.guestRequiredFields()) {
+      Contact.Status status = contactMap.get(field.name());
+      if (status == null) {
+        throw new RequestValidationException("Missing field to attach: " + field.getDisplayName());
+      }
+    }
+
+    for (GuestFields field : requirements.guestFieldsToVerify()) {
+      Contact.Status status = contactMap.get(field.name());
+      if (status != Contact.Status.VERIFIED) {
+        throw new RequestValidationException("Missing field to verify: " + field.getDisplayName());
+      }
+    }
+
+    contactInternalService.finalizePendingContacts(appt.getId());
+    var correctContacts = contactInternalService.getAllContacts(appt.getId());
+    appt.setStatus(Appointment.Status.CONFIRMED);
+    return new AppointmentFinalResponse(appointmentMapper.toResponse(appt), correctContacts);
+  }
+
+  private Appointment getAppointment(Long appointmentId, String slug, Appointment.Status status) {
+    return appointmentDao
+        .findByIdAndSlugAndStatus(appointmentId, slug, status)
+        .orElseThrow(() -> new ResourceNotFoundException("Appointment", appointmentId));
   }
 
   @Transactional(readOnly = true)

@@ -23,6 +23,8 @@ public interface AppointmentDao {
 
   Optional<Appointment> findByIdAndSlug(Long id, String slug);
 
+  Optional<Appointment> findByIdAndSlugAndStatus(Long id, String slug, Appointment.Status status);
+
   Optional<Appointment> findByIdAndStatus(Long id, Appointment.Status status);
 
   void delete(Appointment appointment);

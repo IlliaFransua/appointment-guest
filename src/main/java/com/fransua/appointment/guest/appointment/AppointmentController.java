@@ -1,9 +1,11 @@
 package com.fransua.appointment.guest.appointment;
 
-import com.fransua.appointment.guest.appointment.dto.AppointmentResponse;
+import com.fransua.appointment.guest.appointment.dto.AppointmentDraftResponse;
+import com.fransua.appointment.guest.appointment.dto.AppointmentFinalResponse;
 import com.fransua.appointment.guest.appointment.dto.CreateAppointmentRequest;
 import com.fransua.appointment.guest.appointment.dto.FreeOfferingTimeResponse;
 import com.fransua.appointment.guest.master.MasterClient;
+import com.fransua.appointment.guest.master.dto.booking.GuestFieldsResponse;
 import com.fransua.appointment.guest.master.dto.category.CategoryResponse;
 import com.fransua.appointment.guest.master.dto.offering.OfferingPageResponse;
 import jakarta.validation.Valid;
@@ -55,8 +57,21 @@ public class AppointmentController {
 
   @PostMapping("/appointments/{slug}")
   @ResponseStatus(HttpStatus.CREATED)
-  public AppointmentResponse createAppointment(
+  public AppointmentDraftResponse createAppointment(
       @PathVariable String slug, @RequestBody @Valid CreateAppointmentRequest request) {
     return appointmentService.createAppointment(slug, request);
+  }
+
+  @GetMapping("/contacts/{slug}")
+  @ResponseStatus(HttpStatus.OK)
+  public GuestFieldsResponse getRequiredGuestFields(@PathVariable String slug) {
+    return appointmentService.getRequiredGuestFields(slug);
+  }
+
+  @PostMapping("/{appointmentId}/appointments/{slug}/confirm")
+  @ResponseStatus(HttpStatus.OK)
+  public AppointmentFinalResponse confirmAppointment(
+      @PathVariable Long appointmentId, @PathVariable String slug) {
+    return appointmentService.confirmAppointment(appointmentId, slug);
   }
 }

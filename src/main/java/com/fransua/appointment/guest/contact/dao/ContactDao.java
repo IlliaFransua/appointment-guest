@@ -20,4 +20,6 @@ public interface ContactDao {
   void deleteAllByAppointmentId(Long appointmentId);
 
   List<Contact> findAllByAppointmentId(Long appointmentid);
+
+  List<Contact> findAllByAppointmentIdAndStatus(Long appointmentId, Contact.Status status);
 }

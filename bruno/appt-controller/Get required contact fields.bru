@@ -1,0 +1,15 @@
+meta {
+  name: Get required contact fields
+  type: http
+  seq: 5
+}
+
+get {
+  url: http://localhost:8083/api/v1/appointment/contacts/4855dctk
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

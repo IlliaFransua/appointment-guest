@@ -9,7 +9,7 @@ import com.fransua.appointment.guest.contact.dto.VerificationCodeRequest;
 import com.fransua.appointment.guest.contact.services.PhoneVerificationProducer;
 import com.fransua.appointment.guest.exception.RequestValidationException;
 import com.fransua.appointment.guest.exception.ResourceNotFoundException;
-import com.fransua.appointment.guest.exception.VerificationNotRequiredException;
+import com.fransua.appointment.guest.exception.ServiceUnavailableException;
 import com.fransua.appointment.guest.master.MasterClient;
 import com.fransua.appointment.guest.master.dto.booking.GuestFields;
 import com.fransua.appointment.guest.master.dto.booking.GuestFieldsResponse;
@@ -46,6 +46,7 @@ public class ContactService {
   public ContactResponse attachPhone(Long appointmentId, PhoneRequest request) {
     var appt = getAppointmentByIdAndStatus(appointmentId, Appointment.Status.CREATED);
     ensureNoPhoneAttached(appt.getId());
+    ensurePhoneIsSupported(request);
 
     validateFieldRequirement(
         appt.getSlug(),
@@ -60,6 +61,7 @@ public class ContactService {
     var appt = getAppointmentByIdAndStatus(appointmentId, Appointment.Status.CREATED);
     var contact = getContactByAppointmentId(appt.getId());
     ensureContactIsNotVerified(contact);
+    ensurePhoneIsSupported(request);
 
     if (contact.getValue().equals(request.phone())) {
       contact.setStatus(Contact.Status.ATTACHED);
@@ -90,20 +92,17 @@ public class ContactService {
 
   @Transactional
   private void processVerificationCode(Long contactId, Long appointmentId, boolean isResend) {
+    ensureVerificationSystemIsAvailable();
+
     var appt = getAppointmentByIdAndStatus(appointmentId, Appointment.Status.CREATED);
     var contact = getContactByIdAndAppointmentId(contactId, appt.getId(), Contact.Type.PHONE);
     String phone = contact.getValue();
-
-    if (phoneVerificationProducer.isPhoneVerificationUnvailable(new PhoneRequest(phone))) {
-      contact.setStatus(Contact.Status.ATTACHED);
-      throw new VerificationNotRequiredException(
-          "Verification is not available or not required for this number");
-    }
 
     if (isResend) {
       ensureContactIsNotVerified(contact);
     } else {
       ensureContactAttached(contact);
+      ensurePhoneIsSupported(new PhoneRequest(phone));
       validateFieldRequirement(
           appt.getSlug(),
           GuestFieldsResponse::guestFieldsToVerify,
@@ -159,6 +158,18 @@ public class ContactService {
   private void ensureContactIsNotVerified(Contact contact) {
     if (contact.getStatus().equals(Contact.Status.VERIFIED)) {
       throw new RequestValidationException("Appointment already has a verified phone attached");
+    }
+  }
+
+  private void ensurePhoneIsSupported(PhoneRequest request) {
+    if (phoneVerificationProducer.isPhoneUnsupported(request)) {
+      throw new RequestValidationException("This phone number is unsupported");
+    }
+  }
+
+  private void ensureVerificationSystemIsAvailable() {
+    if (phoneVerificationProducer.isVerificationSystemDisabled()) {
+      throw new ServiceUnavailableException("Verification system is unvailable now");
     }
   }
 
